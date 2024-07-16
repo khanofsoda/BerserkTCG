@@ -1,13 +1,16 @@
-class MyGame extends Phaser.Scene {
+class TCG extends Phaser.Scene {
     constructor() {
-        super({ key: 'MyGame' });
+        super({ key: 'TCG' });
     }
 
     preload() {
-        this.load.image('card', 'resources/images/card.png');
+        this.load.image('card', 'assets/card.png');
     }
 
     create() {
+        // Check if the card asset is loaded
+        console.log('Card asset loaded:', this.textures.exists('card'));
+
         this.cardSprite = this.add.sprite(400, 300, 'card');
         this.cardSprite.setInteractive();
 
@@ -19,7 +22,7 @@ class MyGame extends Phaser.Scene {
         // Add text for player life points
         this.player1LifeText = this.add.text(50, 50, 'Player 1: 20', { fontSize: '20px', fill: '#fff' });
         this.player2LifeText = this.add.text(650, 50, 'Player 2: 20', { fontSize: '20px', fill: '#fff' });
-        
+
         // Example logic for modifying life points
         this.player1LifePoints = 20;
         this.player2LifePoints = 20;
@@ -45,7 +48,7 @@ const config = {
     width: 800,
     height: 600,
     backgroundColor: '#2d2d2d',
-    scene: MyGame
+    scene: TCG
 };
 
 const game = new Phaser.Game(config);
