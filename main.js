@@ -17,7 +17,7 @@ class AnimationHandler {
         for (let i = 0; i < this.numFrames; i++) {
             let x = (i * this.frameWidth) % this.spriteSheet.width;
             let y = Math.floor((i * this.frameWidth) / this.spriteSheet.width) * this.frameHeight;
-            let frame = this.scene.add.sprite(0, 0, this.spriteSheet.key, i);
+            let frame = this.scene.add.sprite(x, y, this.spriteSheet.key, i);
             frame.setVisible(false);
             this.frames.push(frame);
         }
@@ -55,18 +55,25 @@ class MyGame extends Phaser.Scene {
     }
 
     create() {
+        // Verify if assets are loaded
+        console.log('Assets loaded:', this.textures.exists('animation_sheet'), this.textures.exists('card'));
+
         this.cardSprite = this.add.sprite(400, 300, 'card');
         this.cardSprite.setInteractive();
 
         this.cardSprite.on('pointerdown', () => {
             console.log('Card clicked!');
-            // Here you can trigger animations or other effects
+            // Trigger animations or other effects
         });
 
         this.animationHandler = new AnimationHandler(this, 'animation_sheet', 64, 64, 8, 100);
 
         // Move the animation to a visible position
-        this.animationHandler.frames.forEach(frame => frame.setPosition(400, 300));
+        this.animationHandler.frames.forEach(frame => {
+            frame.setPosition(400, 300);
+            frame.setScale(2);  // Adjust the scale for visibility
+            frame.setStrokeStyle(2, 0x00ff00);  // Add a green outline for visibility
+        });
     }
 
     update(time, delta) {
