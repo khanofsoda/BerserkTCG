@@ -4,7 +4,7 @@ class MyGame extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('card', 'assets/card.png');
+        this.load.image('card', 'resources/images/card.png');
     }
 
     create() {
