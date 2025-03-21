@@ -4,17 +4,20 @@ class TCG extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('card', 'assets/card.png'); // Card image
-        this.load.image('deck', 'assets/deck.png'); // Deck image
+        this.load.image('card', 'assets/card.png');
+        this.load.image('deck', 'assets/deck.png');
     }
 
     create() {
-        // Players' life points
+        // Player stats
         this.player1Life = 20;
         this.player2Life = 20;
+        this.currentPlayer = 1;
 
+        // UI elements
         this.player1LifeText = this.add.text(50, 50, `Player 1: ${this.player1Life}`, { fontSize: '20px', fill: '#fff' });
         this.player2LifeText = this.add.text(600, 50, `Player 2: ${this.player2Life}`, { fontSize: '20px', fill: '#fff' });
+        this.turnText = this.add.text(350, 50, `Player ${this.currentPlayer}'s Turn`, { fontSize: '20px', fill: '#fff' });
 
         // Decks
         this.player1Deck = this.createDeck(10);
@@ -26,21 +29,28 @@ class TCG extends Phaser.Scene {
         this.deckSpriteP1.on('pointerdown', () => this.drawCard(1));
         this.deckSpriteP2.on('pointerdown', () => this.drawCard(2));
 
-        // Hands
+        // Hands & Field
         this.player1Hand = [];
         this.player2Hand = [];
+        this.player1Field = [];
+        this.player2Field = [];
 
-        // Turn system
-        this.currentPlayer = 1;
-        this.turnText = this.add.text(350, 50, `Player ${this.currentPlayer}'s Turn`, { fontSize: '20px', fill: '#fff' });
+        // Attacking mechanics
+        this.selectedCard = null;
 
-        this.input.keyboard.on('keydown-SPACE', () => this.endTurn());
+        // End turn button
+        this.endTurnButton = this.add.text(350, 550, "End Turn", { fontSize: "20px", fill: "#fff" })
+            .setInteractive()
+            .on('pointerdown', () => this.endTurn());
     }
 
     createDeck(size) {
         let deck = [];
         for (let i = 0; i < size; i++) {
-            deck.push({ attack: Phaser.Math.Between(1, 5) });
+            deck.push({
+                attack: Phaser.Math.Between(1, 5),
+                health: Phaser.Math.Between(2, 6)
+            });
         }
         return deck;
     }
@@ -61,6 +71,7 @@ class TCG extends Phaser.Scene {
 
         let cardSprite = this.add.sprite(xPos, yPos, 'card').setInteractive();
         cardSprite.attack = card.attack;
+        cardSprite.health = card.health;
         cardSprite.on('pointerdown', () => this.playCard(player, cardSprite));
 
         if (player === 1) {
@@ -71,21 +82,49 @@ class TCG extends Phaser.Scene {
     }
 
     playCard(player, cardSprite) {
-        if (this.currentPlayer === player) {
-            let damage = cardSprite.attack;
-            if (player === 1) {
-                this.player2Life = Math.max(0, this.player2Life - damage);
-                this.player2LifeText.setText(`Player 2: ${this.player2Life}`);
-                this.player1Hand = this.player1Hand.filter(c => c !== cardSprite);
-            } else {
-                this.player1Life = Math.max(0, this.player1Life - damage);
-                this.player1LifeText.setText(`Player 1: ${this.player1Life}`);
-                this.player2Hand = this.player2Hand.filter(c => c !== cardSprite);
-            }
-            cardSprite.destroy();
+        if (this.currentPlayer !== player) return; // Only play cards on your turn
 
-            if (this.player1Life === 0 || this.player2Life === 0) {
-                this.endGame();
+        let xPos = player === 1 ? 200 + this.player1Field.length * 100 : 200 + this.player2Field.length * 100;
+        let yPos = player === 1 ? 400 : 200;
+
+        cardSprite.x = xPos;
+        cardSprite.y = yPos;
+        cardSprite.off('pointerdown'); // Remove hand interaction
+
+        cardSprite.on('pointerdown', () => this.selectCard(player, cardSprite)); // Add attack selection
+
+        if (player === 1) {
+            this.player1Field.push(cardSprite);
+            this.player1Hand = this.player1Hand.filter(card => card !== cardSprite);
+        } else {
+            this.player2Field.push(cardSprite);
+            this.player2Hand = this.player2Hand.filter(card => card !== cardSprite);
+        }
+    }
+
+    selectCard(player, cardSprite) {
+        if (this.currentPlayer !== player) return; // Can't select on enemy's turn
+
+        if (this.selectedCard) {
+            // If a card is already selected, attack!
+            this.attackCard(this.selectedCard, cardSprite);
+            this.selectedCard = null;
+        } else {
+            // Select a card
+            this.selectedCard = cardSprite;
+        }
+    }
+
+    attackCard(attacker, defender) {
+        defender.health -= attacker.attack;
+        console.log(`Attacker deals ${attacker.attack} damage. Defender has ${defender.health} HP left.`);
+
+        if (defender.health <= 0) {
+            defender.destroy();
+            if (this.player1Field.includes(defender)) {
+                this.player1Field = this.player1Field.filter(card => card !== defender);
+            } else {
+                this.player2Field = this.player2Field.filter(card => card !== defender);
             }
         }
     }
@@ -93,12 +132,7 @@ class TCG extends Phaser.Scene {
     endTurn() {
         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
         this.turnText.setText(`Player ${this.currentPlayer}'s Turn`);
-    }
-
-    endGame() {
-        let winner = this.player1Life > 0 ? "Player 1" : "Player 2";
-        this.add.text(300, 300, `${winner} Wins!`, { fontSize: '40px', fill: '#ff0' });
-        this.scene.pause();
+        this.selectedCard = null;
     }
 }
 
